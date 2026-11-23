@@ -37,7 +37,7 @@ A complete, production-grade web portal and operations dashboard engineered for 
 
 - **Framework:** Next.js (App Router) + TypeScript
 - **Styling:** Tailwind CSS + Radix/Lucide icons
-- **Database & ORM:** Prisma ORM (Dual compatible with SQLite for zero-setup local testing and PostgreSQL for production deployment)
+- **Database & ORM:** Prisma ORM with PostgreSQL (Neon, Supabase, or local PostgreSQL)
 - **Authentication:** JWT in secure `httpOnly` cookies + bcrypt password hashing
 - **Validation:** Zod schemas on client and server
 - **Email:** Nodemailer with automatic development simulation fallback
@@ -51,11 +51,7 @@ A complete, production-grade web portal and operations dashboard engineered for 
 - npm or pnpm
 
 ### 2. Environment Setup
-The project already comes pre-configured with a `.env` file pointing to SQLite for zero-configuration testing:
-```bash
-# Verify .env exists or copy example
-cp .env.example .env
-```
+Create `.env` from `.env.example` and set `DATABASE_URL` to a PostgreSQL connection string. Never commit `.env` or production database credentials.
 
 ### 3. Install Dependencies
 ```bash
@@ -100,6 +96,6 @@ Starts the Next.js production build and PostgreSQL database on port 3000 and 543
 
 ### Option B: Vercel + Supabase / Neon PostgreSQL
 1. Create a PostgreSQL database on Neon or Supabase.
-2. In `prisma/schema.prisma`, change `provider = "sqlite"` to `provider = "postgresql"`.
-3. Set your production `DATABASE_URL` in your Vercel Environment Variables.
-4. Deploy with `git push origin main`.
+2. Set `DATABASE_URL` in Vercel's Production Environment Variables.
+3. Apply the Prisma schema with `npm run db:push` using that database URL.
+4. Deploy with `git push origin master`.
