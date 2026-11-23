@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: rajab_web
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://rajab_admin:secure_password_2026@postgres:5432/rajab_db?schema=public
+      - JWT_SECRET=rajab_super_secret_jwt_key_faisalabad_2026_secured_token_string
+      - NEXT_PUBLIC_COMPANY_NAME="Rajab Electricians & Solar Installation"
+      - NEXT_PUBLIC_PHONE="+92 328 7848708"
+      - NEXT_PUBLIC_WHATSAPP="+923287848708"
+    depends_on:
+      - postgres
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: rajab_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: rajab_admin
+      POSTGRES_PASSWORD: secure_password_2026
+      POSTGRES_DB: rajab_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

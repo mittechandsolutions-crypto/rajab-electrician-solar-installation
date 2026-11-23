@@ -1,0 +1,227 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id                String       @id @default(cuid())
+  name              String
+  email             String       @unique
+  phone             String       @unique
+  passwordHash      String
+  role              String       @default("CUSTOMER") // "CUSTOMER", "TECHNICIAN", "ADMIN"
+  isEmailVerified   Boolean      @default(false)
+  verificationToken String?
+  resetToken        String?
+  resetTokenExpiry  DateTime?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  addresses         Address[]
+  bookings          Booking[]    @relation("CustomerBookings")
+  assignedTasks     Booking[]    @relation("TechnicianBookings")
+  reviews           Review[]
+  invoices          Invoice[]
+  auditLogs         AuditLog[]
+}
+
+model Address {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title      String   // e.g. "Home", "Factory", "Shop"
+  area       String   // e.g. Himmatpura, Peoples Colony, Madina Town, D-Ground
+  street     String
+  city       String   @default("Faisalabad")
+  postalCode String   @default("38000")
+  isDefault  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  bookings   Booking[]
+}
+
+model Service {
+  id            String   @id @default(cuid())
+  slug          String   @unique
+  titleEn       String
+  titleUr       String
+  category      String   // "ELECTRICAL", "SOLAR", "EMERGENCY"
+  descriptionEn String
+  descriptionUr String
+  basePrice     Float    // PKR
+  estimatedTime String   // e.g. "1-2 Hours"
+  isActive      Boolean  @default(true)
+  iconName      String   // lucide icon identifier
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  bookings      Booking[]
+}
+
+model Booking {
+  id                String   @id @default(cuid())
+  bookingNumber     String   @unique
+  customerId        String
+  customer          User     @relation("CustomerBookings", fields: [customerId], references: [id])
+  technicianId      String?
+  technician        User?    @relation("TechnicianBookings", fields: [technicianId], references: [id])
+  serviceId         String?
+  service           Service? @relation(fields: [serviceId], references: [id])
+  serviceCategory   String
+  status            String   @default("PENDING") // PENDING, CONFIRMED, TECHNICIAN_ASSIGNED, IN_PROGRESS, COMPLETED, CANCELLED
+  scheduledDate     DateTime
+  scheduledTimeSlot String
+  isEmergency       Boolean  @default(false)
+
+  addressId         String?
+  address           Address? @relation(fields: [addressId], references: [id])
+  addressText       String
+
+  description       String
+  photos            String   @default("[]") // JSON string of photo URLs
+  adminNotes        String?
+  technicianNotes   String?
+
+  estimatedCost     Float?
+  finalAmount       Float?
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  timeline          BookingTimeline[]
+  invoices          Invoice[]
+  review            Review?
+}
+
+model BookingTimeline {
+  id          String   @id @default(cuid())
+  bookingId   String
+  booking     Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  status      String
+  title       String
+  note        String?
+  performedBy String
+  createdAt   DateTime @default(now())
+}
+
+model SolarQuoteRequest {
+  id             String   @id @default(cuid())
+  quoteNumber    String   @unique
+  name           String
+  phone          String
+  email          String?
+  areaLocation   String
+  monthlyBillPKR Float
+  roofAreaSqFt   Float?
+  roofType       String
+  systemType     String   // On-Grid, Hybrid, Off-Grid
+  recommendedKw  Float
+  estimatedCost  Float
+  status         String   @default("NEW") // NEW, CONTACTED, QUOTED, WON, LOST
+  notes          String?
+  createdAt      DateTime @default(now())
+}
+
+model Invoice {
+  id            String    @id @default(cuid())
+  invoiceNumber String    @unique
+  bookingId     String
+  booking       Booking   @relation(fields: [bookingId], references: [id])
+  customerId    String
+  customer      User      @relation(fields: [customerId], references: [id])
+  subtotal      Float
+  taxAmount     Float     @default(0)
+  discount      Float     @default(0)
+  totalAmount   Float
+  paymentStatus String    @default("UNPAID") // UNPAID, PARTIALLY_PAID, PAID
+  paymentMethod String    @default("CASH_ON_SERVICE") // CASH_ON_SERVICE, JAZZCASH, EASYPAISA, BANK_TRANSFER
+  paidAt        DateTime?
+  notes         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Review {
+  id          String   @id @default(cuid())
+  bookingId   String?  @unique
+  booking     Booking? @relation(fields: [bookingId], references: [id])
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  authorName  String
+  rating      Int
+  comment     String
+  isApproved  Boolean  @default(false)
+  reply       String?
+  createdAt   DateTime @default(now())
+}
+
+model ProjectGallery {
+  id          String    @id @default(cuid())
+  titleEn     String
+  titleUr     String
+  category    String    // Solar Residential, Solar Commercial, Factory Wiring, Home Automation
+  description String
+  beforeImage String?
+  afterImage  String
+  location    String
+  capacity    String?
+  isFeatured  Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+}
+
+model BlogPost {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  titleEn     String
+  titleUr     String
+  excerptEn   String
+  excerptUr   String
+  contentEn   String
+  contentUr   String
+  coverImage  String
+  author      String   @default("Engr. Rajab & Team")
+  isPublished Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model ContactMessage {
+  id        String   @id @default(cuid())
+  name      String
+  phone     String
+  email     String?
+  subject   String
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model SiteSetting {
+  id                    String   @id @default("global")
+  companyName           String   @default("Rajab Electricians & Solar Installation")
+  phone                 String   @default("+92 328 7848708")
+  whatsapp              String   @default("+923287848708")
+  email                 String   @default("rajabelectricianfsd@gmail.com")
+  addressEn             String   @default("Himmatpura, Street No. 12, Faisalabad, 38000, Pakistan")
+  addressUr             String   @default("ہمت پورہ، گلی نمبر 12، فیصل آباد، پاکستان")
+  solarRatePerWattPKR   Float    @default(120.0)
+  netMeteringCostPKR    Float    @default(85000.0)
+  averageUnitCostPKR    Float    @default(62.0)
+  emergencySurchargePKR Float    @default(1000.0)
+  updatedAt             DateTime @updatedAt
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  adminId    String
+  admin      User     @relation(fields: [adminId], references: [id])
+  action     String
+  targetType String
+  targetId   String?
+  details    String?
+  createdAt  DateTime @default(now())
+}
